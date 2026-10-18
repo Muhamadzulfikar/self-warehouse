@@ -2,11 +2,23 @@
   import { onMount } from "svelte";
   import type { Movement } from "../../interface/itemInterface";
   import type { Location } from "../../interface/locationInterface";
+  import type { Category } from "../../interface/categoryInterface";
+  import type { Item } from "../../interface/itemInterface";
 
   let movements: Movement[] = $state([]);
   let locations: Location[] = $state([]);
+  let categories: Category[] = $state([]);
+  let items: Item[] = $state([]);
 
+  let filterCategory: string = $state("");
   let loadError: string | null = $state(null);
+
+  let filteredMovements = $derived(
+    filterCategory ? movements.filter(m => {
+      const item = items.find(i => i.name === m.item_name);
+      return item?.category === filterCategory;
+    }) : movements
+  );
 
   async function fetchMovements() {
     loadError = null;
@@ -36,9 +48,35 @@
     }
   }
 
+  async function fetchCategories() {
+    try {
+      const res = await fetch("/api/categories");
+      const result = await res.json();
+      if (result.success) {
+        categories = result.data;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function fetchItems() {
+    try {
+      const res = await fetch("/api/items");
+      const result = await res.json();
+      if (result.success) {
+        items = result.data;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   onMount(() => {
     fetchMovements();
     fetchLocations();
+    fetchCategories();
+    fetchItems();
   });
 
   // Build hierarchical location path (e.g., "Building A > Floor 1 > Room 101")
@@ -88,8 +126,20 @@
 <div class="movements-page">
     <header class="page-header">
         <h1 class="page-title">Movement History</h1>
-        <span class="movement-count">{movements.length} total</span>
+        <span class="movement-count">{filteredMovements.length}{filterCategory ? ` of ${movements.length}` : ''} total</span>
     </header>
+
+    <div class="filter-bar">
+        <select
+            class="filter-select"
+            bind:value={filterCategory}
+        >
+            <option value="">All Categories</option>
+            {#each categories as cat}
+                <option value={cat.id}>{cat.name}</option>
+            {/each}
+        </select>
+    </div>
 
     {#if loadError}
         <div class="empty-state">
@@ -100,17 +150,17 @@
             <p class="empty-subtitle">{loadError}</p>
             <button class="btn-retry" onclick={fetchMovements}>Try again</button>
         </div>
-    {:else if movements.length === 0}
+    {:else if filteredMovements.length === 0}
         <div class="empty-state">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25m-2.25 0h-2.25m0 0v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v3.866m12.75 0v.958c0 .568.422 1.048.987 1.106a48.554 48.554 0 0010.026 0 1.106 1.106 0 00.987-1.106v-3.866m-12.75 0H5.625m0 0h2.25M5.625 15.75h2.25M5.625 11.25h2.25M11.25 11.25v2.25h-2.25M11.25 11.25H9.75" />
             </svg>
-            <p class="empty-title">No movements yet</p>
-            <p class="empty-subtitle">Movement history will appear here when items change location</p>
+            <p class="empty-title">{filterCategory ? 'No movements in this category' : 'No movements yet'}</p>
+            <p class="empty-subtitle">{filterCategory ? 'Try selecting a different category' : 'Movement history will appear here when items change location'}</p>
         </div>
     {:else}
         <ul class="movement-list" role="list">
-            {#each movements as movement (movement.id)}
+            {#each filteredMovements as movement (movement.id)}
                 <li class="movement-card">
                     <div class="movement-content">
                         <div class="movement-info">
@@ -171,6 +221,33 @@
         color: #78716c;
         margin-top: 2px;
         display: block;
+    }
+
+    .filter-bar {
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid #e7e5e4;
+    }
+
+    .filter-select {
+        width: 100%;
+        height: 40px;
+        padding: 0 36px 0 12px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #d97706;
     }
 
     .empty-state {
