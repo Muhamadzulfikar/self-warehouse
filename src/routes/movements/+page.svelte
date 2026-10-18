@@ -4,22 +4,40 @@
   import type { Movement } from "../../interface/itemInterface";
   import type { Location } from "../../interface/locationInterface";
   import type { Category } from "../../interface/categoryInterface";
-  import type { Item } from "../../interface/itemInterface";
 
   let movements: Movement[] = $state([]);
   let locations: Location[] = $state([]);
   let categories: Category[] = $state([]);
-  let items: Item[] = $state([]);
 
   let filterCategory: string = $state("");
+  let filterFromLocation: string = $state("");
+  let filterToLocation: string = $state("");
+  let filterDate: string = $state("");
+  let searchName: string = $state("");
   let loadError: string | null = $state(null);
 
   let filteredMovements = $derived(
-    filterCategory ? movements.filter(m => {
-      const item = items.find(i => i.name === m.item_name);
-      return item?.category === filterCategory;
-    }) : movements
+    movements.filter(m => {
+      const matchCategory = !filterCategory || m.category === filterCategory;
+      const matchFrom = !filterFromLocation || m.from_location === filterFromLocation;
+      const matchTo = !filterToLocation || m.to_location === filterToLocation;
+      const matchName = !searchName || m.item_name.toLowerCase().includes(searchName.toLowerCase());
+      const matchDate = !filterDate || isSameDate(m.createdAt, filterDate);
+      return matchCategory && matchFrom && matchTo && matchName && matchDate;
+    })
   );
+
+  function isSameDate(date: any, filter: string): boolean {
+    if (!date || !filter) return true;
+    let d: Date;
+    if (typeof date === 'object' && '_seconds' in date) {
+      d = new Date(Number(date._seconds) * 1000);
+    } else {
+      d = new Date(date);
+    }
+    const filterDate = new Date(filter);
+    return d.toDateString() === filterDate.toDateString();
+  }
 
   async function fetchMovements() {
     loadError = null;
@@ -61,23 +79,10 @@
     }
   }
 
-  async function fetchItems() {
-    try {
-      const res = await fetch("/api/items");
-      const result = await res.json();
-      if (result.success) {
-        items = result.data;
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   onMount(() => {
     fetchMovements();
     fetchLocations();
     fetchCategories();
-    fetchItems();
   });
 
   // Build hierarchical location path (e.g., "Building A > Floor 1 > Room 101")
@@ -148,19 +153,63 @@
             </svg>
         </button>
         <h1 class="page-title">Movement History</h1>
-        <span class="movement-count">{filteredMovements.length}{filterCategory ? ` of ${movements.length}` : ''} total</span>
+        <span class="movement-count">{filteredMovements.length}{filterCategory || filterFromLocation || filterToLocation || filterDate || searchName ? ` of ${movements.length}` : ''} total</span>
     </header>
 
     <div class="filter-bar">
-        <select
-            class="filter-select"
-            bind:value={filterCategory}
-        >
-            <option value="">All Categories</option>
-            {#each categories as cat}
-                <option value={cat.id}>{cat.name}</option>
-            {/each}
-        </select>
+        <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+                type="text"
+                class="search-input"
+                bind:value={searchName}
+                placeholder="Search by item name..."
+            />
+        </div>
+        <div class="filter-row">
+            <select
+                class="filter-select"
+                bind:value={filterCategory}
+            >
+                <option value="">All Categories</option>
+                {#each categories as cat}
+                    <option value={cat.id}>{cat.name}</option>
+                {/each}
+            </select>
+        </div>
+        <div class="filter-row">
+            <select
+                class="filter-select"
+                bind:value={filterFromLocation}
+            >
+                <option value="">From: All Locations</option>
+                {#each locations as loc}
+                    <option value={loc.id}>{getLocationPath(loc.id)}</option>
+                {/each}
+            </select>
+            <select
+                class="filter-select"
+                bind:value={filterToLocation}
+            >
+                <option value="">To: All Locations</option>
+                {#each locations as loc}
+                    <option value={loc.id}>{getLocationPath(loc.id)}</option>
+                {/each}
+            </select>
+        </div>
+        <div class="filter-row">
+            <div class="date-filter">
+                <label class="date-label" for="filter-date">Date</label>
+                <input
+                    id="filter-date"
+                    type="date"
+                    class="date-input"
+                    bind:value={filterDate}
+                />
+            </div>
+        </div>
     </div>
 
     {#if loadError}
@@ -177,8 +226,8 @@
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25m-2.25 0h-2.25m0 0v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v3.866m12.75 0v.958c0 .568.422 1.048.987 1.106a48.554 48.554 0 0010.026 0 1.106 1.106 0 00.987-1.106v-3.866m-12.75 0H5.625m0 0h2.25M5.625 15.75h2.25M5.625 11.25h2.25M11.25 11.25v2.25h-2.25M11.25 11.25H9.75" />
             </svg>
-            <p class="empty-title">{filterCategory ? 'No movements in this category' : 'No movements yet'}</p>
-            <p class="empty-subtitle">{filterCategory ? 'Try selecting a different category' : 'Movement history will appear here when items change location'}</p>
+            <p class="empty-title">{filterCategory || filterFromLocation || filterToLocation || filterDate || searchName ? 'No matching movements' : 'No movements yet'}</p>
+            <p class="empty-subtitle">{filterCategory || filterFromLocation || filterToLocation || filterDate || searchName ? 'Try adjusting your filters' : 'Movement history will appear here when items change location'}</p>
         </div>
     {:else}
         <ul class="movement-list" role="list">
@@ -276,6 +325,49 @@
         padding: 12px 16px;
         background: #fff;
         border-bottom: 1px solid #e7e5e4;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        color: #a8a29e;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px 0 40px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #d97706;
+    }
+
+    .search-input::placeholder {
+        color: #a8a29e;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 8px;
     }
 
     .filter-select {
@@ -295,6 +387,34 @@
     }
 
     .filter-select:focus {
+        outline: none;
+        border-color: #d97706;
+    }
+
+    .date-filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .date-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #44403c;
+        white-space: nowrap;
+    }
+
+    .date-input {
+        height: 40px;
+        padding: 0 12px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+    }
+
+    .date-input:focus {
         outline: none;
         border-color: #d97706;
     }
