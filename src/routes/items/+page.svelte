@@ -116,31 +116,86 @@
         // Get old item data to check if location changed
         const oldItem = items.find(i => i.id === editId);
         const oldLocation = oldItem?.location || "";
+        const oldQuantity = oldItem?.quantity || 0;
 
-        const res = await fetch(`/api/items/${editId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, category, location, quantity })
-        });
-        const result = await res.json();
-        if (!res.ok || !result.success) {
-          throw new Error(result.error || "Gagal mengupdate data");
-        }
-
-        // If location changed, create a movement record
+        // If location changed, handle movement logic
         if (oldLocation && oldLocation !== location) {
           const moveQty = movementQuantity > 0 ? movementQuantity : quantity;
-          await fetch("/api/movements", {
-            method: "POST",
+
+          // Case 1: Partial movement (moveQty < oldQuantity)
+          if (moveQty < oldQuantity) {
+            // Update old item with remaining quantity at old location
+            await fetch(`/api/items/${editId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name,
+                category,
+                location: oldLocation,
+                quantity: oldQuantity - moveQty
+              })
+            });
+
+            // Create new item with moved quantity at new location
+            await fetch("/api/items", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name,
+                category,
+                location,
+                quantity: moveQty
+              })
+            });
+
+            // Create movement record for the partial move
+            await fetch("/api/movements", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                item_name: name,
+                category: category,
+                from_location: oldLocation,
+                to_location: location,
+                quantity: moveQty
+              })
+            });
+          } else {
+            // Case 2: Full movement (moveQty == oldQuantity or movementQuantity == 0 means move all)
+            const res = await fetch(`/api/items/${editId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name, category, location, quantity: moveQty })
+            });
+            const result = await res.json();
+            if (!res.ok || !result.success) {
+              throw new Error(result.error || "Gagal mengupdate data");
+            }
+
+            // Create movement record for full move
+            await fetch("/api/movements", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                item_name: name,
+                category: category,
+                from_location: oldLocation,
+                to_location: location,
+                quantity: moveQty
+              })
+            });
+          }
+        } else {
+          // No location change, just update the item
+          const res = await fetch(`/api/items/${editId}`, {
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              item_name: name,
-              category: category,
-              from_location: oldLocation,
-              to_location: location,
-              quantity: moveQty
-            })
+            body: JSON.stringify({ name, category, location, quantity })
           });
+          const result = await res.json();
+          if (!res.ok || !result.success) {
+            throw new Error(result.error || "Gagal mengupdate data");
+          }
         }
 
         editId = null;
