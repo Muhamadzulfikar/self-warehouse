@@ -14,8 +14,13 @@
   let quantity: number = $state(0);
   let editId: string | null = $state(null);
 
+  let filterCategory: string = $state("");
   let showSheet = $state(false);
   let loadError: string | null = $state(null);
+
+  let filteredItems = $derived(
+    filterCategory ? items.filter(item => item.category === filterCategory) : items
+  );
 
   async function fetchItems() {
     loadError = null;
@@ -205,8 +210,20 @@
 <div class="items-page">
     <header class="page-header">
         <h1 class="page-title">Items</h1>
-        <span class="item-count">{items.length} total</span>
+        <span class="item-count">{filteredItems.length}{filterCategory ? ` of ${items.length}` : ''} items</span>
     </header>
+
+    <div class="filter-bar">
+        <select
+            class="filter-select"
+            bind:value={filterCategory}
+        >
+            <option value="">All Categories</option>
+            {#each categories as cat}
+                <option value={cat.id}>{cat.name}</option>
+            {/each}
+        </select>
+    </div>
 
     {#if loadError}
         <div class="empty-state">
@@ -217,17 +234,17 @@
             <p class="empty-subtitle">{loadError}</p>
             <button class="btn-retry" onclick={fetchItems}>Try again</button>
         </div>
-    {:else if items.length === 0}
+    {:else if filteredItems.length === 0}
         <div class="empty-state">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
             </svg>
-            <p class="empty-title">No items yet</p>
-            <p class="empty-subtitle">Add your first item to get started</p>
+            <p class="empty-title">{filterCategory ? 'No items in this category' : 'No items yet'}</p>
+            <p class="empty-subtitle">{filterCategory ? 'Try selecting a different category' : 'Add your first item to get started'}</p>
         </div>
     {:else}
         <ul class="item-list" role="list">
-            {#each items as item (item.id)}
+            {#each filteredItems as item (item.id)}
                 <li class="item-card">
                     <button
                         class="item-content"
@@ -364,6 +381,33 @@
         color: #78716c;
         margin-top: 2px;
         display: block;
+    }
+
+    .filter-bar {
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid #e7e5e4;
+    }
+
+    .filter-select {
+        width: 100%;
+        height: 40px;
+        padding: 0 36px 0 12px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+    }
+
+    .filter-select:focus {
+        outline: none;
+        border-color: #d97706;
     }
 
     .empty-state {
