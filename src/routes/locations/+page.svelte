@@ -7,9 +7,14 @@
   let name = $state("");
   let parent: string | null = $state(null);
   let editId: string | null = $state(null);
+  let searchName: string = $state("");
 
   let showSheet = $state(false);
   let loadError: string | null = $state(null);
+
+  let filteredLocations = $derived(
+    searchName ? locations.filter(l => l.name.toLowerCase().includes(searchName.toLowerCase())) : locations
+  );
 
   async function fetchLocations() {
     loadError = null;
@@ -120,8 +125,22 @@
             </svg>
         </button>
         <h1 class="page-title">Locations</h1>
-        <span class="location-count">{locations.length} total</span>
+        <span class="location-count">{filteredLocations.length}{searchName ? ` of ${locations.length}` : ''} total</span>
     </header>
+
+    <div class="search-bar">
+        <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+                type="text"
+                class="search-input"
+                bind:value={searchName}
+                placeholder="Search locations..."
+            />
+        </div>
+    </div>
 
     {#if loadError}
         <div class="empty-state">
@@ -132,18 +151,18 @@
             <p class="empty-subtitle">{loadError}</p>
             <button class="btn-retry" onclick={fetchLocations}>Try again</button>
         </div>
-    {:else if locations.length === 0}
+    {:else if filteredLocations.length === 0}
         <div class="empty-state">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
-            <p class="empty-title">No locations yet</p>
-            <p class="empty-subtitle">Add your first location to get started</p>
+            <p class="empty-title">{searchName ? 'No matching locations' : 'No locations yet'}</p>
+            <p class="empty-subtitle">{searchName ? 'Try a different search term' : 'Add your first location to get started'}</p>
         </div>
     {:else}
         <ul class="location-list" role="list">
-            {#each locations as location (location.id)}
+            {#each filteredLocations as location (location.id)}
                 <li class="location-card">
                     <button
                         class="location-content"
@@ -282,6 +301,47 @@
         color: #78716c;
         margin-top: 2px;
         display: block;
+    }
+
+    .search-bar {
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid #e7e5e4;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        color: #a8a29e;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px 0 40px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #d97706;
+    }
+
+    .search-input::placeholder {
+        color: #a8a29e;
     }
 
     .empty-state {

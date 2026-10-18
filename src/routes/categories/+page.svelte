@@ -6,10 +6,15 @@
   let categories: Category[] = $state([]);
   let name = $state("");
   let editId: string | null = $state(null);
+  let searchName: string = $state("");
 
   // State tambahan untuk kontrol UI Bottom Sheet & Error State
   let showSheet = $state(false);
   let loadError: string | null = $state(null);
+
+  let filteredCategories = $derived(
+    searchName ? categories.filter(c => c.name.toLowerCase().includes(searchName.toLowerCase())) : categories
+  );
 
   // READ: Ambil data dari API internal SvelteKit
   async function fetchCategories() {
@@ -113,8 +118,22 @@
             </svg>
         </button>
         <h1 class="page-title">Categories</h1>
-        <span class="category-count">{categories.length} total</span>
+        <span class="category-count">{filteredCategories.length}{searchName ? ` of ${categories.length}` : ''} total</span>
     </header>
+
+    <div class="search-bar">
+        <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+                type="text"
+                class="search-input"
+                bind:value={searchName}
+                placeholder="Search categories..."
+            />
+        </div>
+    </div>
 
     <!-- Category List / Empty State -->
     {#if loadError}
@@ -126,17 +145,17 @@
             <p class="empty-subtitle">{loadError}</p>
             <button class="btn-retry" onclick={fetchCategories}>Try again</button>
         </div>
-    {:else if categories.length === 0}
+    {:else if filteredCategories.length === 0}
         <div class="empty-state">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.007zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
             </svg>
-            <p class="empty-title">No categories yet</p>
-            <p class="empty-subtitle">Add your first category to get started</p>
+            <p class="empty-title">{searchName ? 'No matching categories' : 'No categories yet'}</p>
+            <p class="empty-subtitle">{searchName ? 'Try a different search term' : 'Add your first category to get started'}</p>
         </div>
     {:else}
         <ul class="category-list" role="list">
-            {#each categories as category (category.id)}
+            {#each filteredCategories as category (category.id)}
                 <li class="category-card">
                     <button
                         class="category-content"
@@ -262,6 +281,47 @@
         color: #78716c;
         margin-top: 2px;
         display: block;
+    }
+
+    .search-bar {
+        padding: 12px 16px;
+        background: #fff;
+        border-bottom: 1px solid #e7e5e4;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        color: #a8a29e;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px 0 40px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #d97706;
+    }
+
+    .search-input::placeholder {
+        color: #a8a29e;
     }
 
     /* Empty State */
