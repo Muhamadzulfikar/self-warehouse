@@ -154,6 +154,19 @@
         if (!res.ok || !result.success) {
           throw new Error(result.error || "Gagal menyimpan data");
         }
+
+        // Create a movement record for new item (incoming to location)
+        await fetch("/api/movements", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item_name: name,
+            category: category,
+            from_location: "",
+            to_location: location,
+            quantity: quantity
+          })
+        });
       }
 
       name = "";
