@@ -12,6 +12,7 @@
   let category: string = $state("");
   let location: string = $state("");
   let quantity: number = $state(0);
+  let movementQuantity: number = $state(0);
   let editId: string | null = $state(null);
 
   let filterCategory: string = $state("");
@@ -127,14 +128,16 @@
 
         // If location changed, create a movement record
         if (oldLocation && oldLocation !== location) {
+          const moveQty = movementQuantity > 0 ? movementQuantity : quantity;
           await fetch("/api/movements", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               item_name: name,
+              category: category,
               from_location: oldLocation,
               to_location: location,
-              quantity: quantity
+              quantity: moveQty
             })
           });
         }
@@ -189,6 +192,7 @@
     category = "";
     location = "";
     quantity = 0;
+    movementQuantity = 0;
     editId = null;
     showSheet = true;
   }
@@ -199,6 +203,7 @@
     category = "";
     location = "";
     quantity = 0;
+    movementQuantity = 0;
     editId = null;
   }
 </script>
@@ -341,6 +346,21 @@
                         placeholder="1"
                     />
                 </div>
+
+                {#if editId}
+                    <div class="form-group">
+                        <label class="form-label" for="movement-quantity">Movement Quantity</label>
+                        <input
+                            id="movement-quantity"
+                            type="number"
+                            class="form-input"
+                            bind:value={movementQuantity}
+                            min="1"
+                            placeholder="Qty to move (default: all)"
+                        />
+                        <span class="form-hint">Quantity of items to move (defaults to full quantity)</span>
+                    </div>
+                {/if}
 
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick={closeSheet}>Cancel</button>
@@ -681,6 +701,11 @@
         outline: none;
         border-color: #d97706;
         box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+    }
+
+    .form-hint {
+        font-size: 12px;
+        color: #a8a29e;
     }
 
     .form-actions {

@@ -100,11 +100,18 @@
     const d = new Date(date);
     return d.toLocaleDateString("id-ID", {
       day: "2-digit",
-      month: "short",
+      month: "long",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
+      hour12: false
     });
+  }
+
+  function getCategoryName(categoryId: string | null): string {
+    if (!categoryId || categoryId === "") return "-";
+    const found = categories.find(c => c.id === categoryId);
+    return found ? found.name : "-";
   }
 
   async function handleDelete(id: string) {
@@ -165,6 +172,7 @@
                     <div class="movement-content">
                         <div class="movement-info">
                             <span class="movement-item">{movement.item_name}</span>
+                            <span class="movement-category">Category: {getCategoryName(movement.category)}</span>
                             <div class="movement-route">
                                 <span class="from-location">{getLocationPath(movement.from_location)}</span>
                                 <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -331,6 +339,11 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .movement-category {
+        font-size: 13px;
+        color: #78716c;
     }
 
     .movement-route {

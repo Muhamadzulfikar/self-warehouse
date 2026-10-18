@@ -17,6 +17,7 @@ export interface CreateItemRequest {
 export interface Movement {
   id: string;
   item_name: string;
+  category: string;
   from_location: string;
   to_location: string;
   quantity: number;
@@ -25,6 +26,7 @@ export interface Movement {
 
 export interface CreateMovementRequest {
   item_name?: string;
+  category?: string;
   from_location?: string;
   to_location?: string;
   quantity?: number;

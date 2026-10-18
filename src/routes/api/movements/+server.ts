@@ -23,7 +23,7 @@ export const GET: RequestHandler = async () => {
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const body = (await request.json()) as CreateMovementRequest;
-    const { item_name, from_location, to_location, quantity } = body;
+    const { item_name, category, from_location, to_location, quantity } = body;
     if (!item_name) {
       return json({ success: false, error: 'Nama item wajib diisi' }, { status: 400 });
     }
@@ -35,6 +35,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
     const docRef = await db.collection(COLLECTION).add({
       item_name,
+      category: category || '',
       from_location: from_location || '',
       to_location,
       quantity,
