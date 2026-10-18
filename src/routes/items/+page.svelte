@@ -17,11 +17,18 @@
   let editId: string | null = $state(null);
 
   let filterCategory: string = $state("");
+  let filterLocation: string = $state("");
+  let searchName: string = $state("");
   let showSheet = $state(false);
   let loadError: string | null = $state(null);
 
   let filteredItems = $derived(
-    filterCategory ? items.filter(item => item.category === filterCategory) : items
+    items.filter(item => {
+      const matchCategory = !filterCategory || item.category === filterCategory;
+      const matchLocation = !filterLocation || item.location === filterLocation;
+      const matchName = !searchName || item.name.toLowerCase().includes(searchName.toLowerCase());
+      return matchCategory && matchLocation && matchName;
+    })
   );
 
   async function fetchItems() {
@@ -289,19 +296,41 @@
             </svg>
         </button>
         <h1 class="page-title">Items</h1>
-        <span class="item-count">{filteredItems.length}{filterCategory ? ` of ${items.length}` : ''} items</span>
+        <span class="item-count">{filteredItems.length}{filterCategory || filterLocation || searchName ? ` of ${items.length}` : ''} items</span>
     </header>
 
     <div class="filter-bar">
-        <select
-            class="filter-select"
-            bind:value={filterCategory}
-        >
-            <option value="">All Categories</option>
-            {#each categories as cat}
-                <option value={cat.id}>{cat.name}</option>
-            {/each}
-        </select>
+        <div class="search-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+            <input
+                type="text"
+                class="search-input"
+                bind:value={searchName}
+                placeholder="Search by name..."
+            />
+        </div>
+        <div class="filter-row">
+            <select
+                class="filter-select"
+                bind:value={filterCategory}
+            >
+                <option value="">All Categories</option>
+                {#each categories as cat}
+                    <option value={cat.id}>{cat.name}</option>
+                {/each}
+            </select>
+            <select
+                class="filter-select"
+                bind:value={filterLocation}
+            >
+                <option value="">All Locations</option>
+                {#each locations as loc}
+                    <option value={loc.id}>{getLocationPath(loc.id)}</option>
+                {/each}
+            </select>
+        </div>
     </div>
 
     {#if loadError}
@@ -507,6 +536,49 @@
         padding: 12px 16px;
         background: #fff;
         border-bottom: 1px solid #e7e5e4;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        color: #a8a29e;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        height: 40px;
+        padding: 0 12px 0 40px;
+        font-size: 14px;
+        border: 1.5px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1c1917;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #d97706;
+    }
+
+    .search-input::placeholder {
+        color: #a8a29e;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 8px;
     }
 
     .filter-select {
