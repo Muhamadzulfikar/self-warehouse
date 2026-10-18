@@ -361,7 +361,7 @@
                             type="number"
                             class="form-input"
                             bind:value={movementQuantity}
-                            min="1"
+                            min="0"
                             placeholder="Qty to move (default: all)"
                         />
                         <span class="form-hint">Quantity of items to move (defaults to full quantity)</span>
