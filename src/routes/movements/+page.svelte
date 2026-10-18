@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import type { Movement } from "../../interface/itemInterface";
   import type { Location } from "../../interface/locationInterface";
   import type { Category } from "../../interface/categoryInterface";
@@ -141,6 +142,11 @@
 
 <div class="movements-page">
     <header class="page-header">
+        <button class="back-btn" onclick={() => goto('/')} aria-label="Back to main page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+        </button>
         <h1 class="page-title">Movement History</h1>
         <span class="movement-count">{filteredMovements.length}{filterCategory ? ` of ${movements.length}` : ''} total</span>
     </header>
@@ -224,6 +230,32 @@
         position: sticky;
         top: 0;
         z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .back-btn {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f4;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .back-btn:hover {
+        background: #e7e5e4;
+    }
+
+    .back-btn svg {
+        width: 20px;
+        height: 20px;
+        color: #44403c;
     }
 
     .page-title {
