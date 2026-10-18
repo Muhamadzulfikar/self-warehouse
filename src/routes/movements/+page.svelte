@@ -96,8 +96,17 @@
     return parts.join(" > ") || "-";
   }
 
-  function formatDate(date: Date | string): string {
-    const d = new Date(date);
+  function formatDate(date: Date | string | { _seconds: number; _nanoseconds: number } | null | undefined): string {
+    if (!date) return "-";
+    let d: Date;
+    if (typeof date === 'object' && '_seconds' in date) {
+      // Firebase Timestamp serialized object { _seconds, _nanoseconds }
+      const ts = date as { _seconds: number; _nanoseconds: number };
+      d = new Date(Number(ts._seconds) * 1000);
+    } else {
+      d = new Date(date as Date | string);
+    }
+    if (isNaN(d.getTime())) return "-";
     return d.toLocaleDateString("id-ID", {
       day: "2-digit",
       month: "long",
