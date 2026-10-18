@@ -27,5 +27,8 @@
 	"imports": {
 		"#lib": "./src/lib/index.js",
 		"#lib/*": "./src/lib/*"
+	},
+	"dependencies": {
+		"firebase-admin": "^14.5.0"
 	}
 }
