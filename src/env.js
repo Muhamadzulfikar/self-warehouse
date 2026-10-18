@@ -1,5 +1,13 @@
 import { defineEnvVars } from '@sveltejs/kit/env';
 
 export const variables = defineEnvVars({
-	FIREBASE_PRIVATE_KEY: {}
+	FIREBASE_PROJECT_ID: {},
+	FIREBASE_PRIVATE_KEY_ID: {},
+	FIREBASE_PRIVATE_KEY: {},
+	FIREBASE_CLIENT_EMAIL: {},
+	FIREBASE_CLIENT_ID: {},
+	FIREBASE_AUTH_URI: {},
+	FIREBASE_TOKEN_URI: {},
+	FIREBASE_AUTH_PROVIDER_X509_CERT_URL: {},
+	FIREBASE_CLIENT_X509_CERT_URL: {}
 });
